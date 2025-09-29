@@ -49,6 +49,7 @@ const App = () => {
         // Parse accounts and group by category
         const categoryData = {};
         const accountsMap = {};
+        const accountValues = {}; // Track individual account values
 
         rows.slice(1).forEach((row) => {
           if (!row[0] || row[0] === 'Net Worth') return; // Skip empty or net worth row
@@ -67,10 +68,14 @@ const App = () => {
             accountsMap[category] = [];
           }
 
-          // Track accounts by category
+          // Get latest value (last column)
+          const latestValue = parseFloat(row[row.length - 1].replace(/,/g, '')) || 0;
+
+          // Track accounts by category with their latest values
           accountsMap[category].push({
             name: fullAccountName,
-            fullName: accountName
+            fullName: accountName,
+            value: latestValue
           });
 
           // Sum values for each date
@@ -364,11 +369,20 @@ const App = () => {
                     {category}
                   </h3>
                   <ul className="account-list">
-                    {accountsByCategory[category]?.map((account, index) => (
-                      <li key={index} className="account-list-item">
-                        {account.name}
-                      </li>
-                    ))}
+                    {accountsByCategory[category]?.map((account, index) => {
+                      const isClosed = account.fullName.startsWith('(Closed');
+                      return (
+                        <li key={index} className={`account-list-item ${isClosed ? 'closed-account' : ''}`}>
+                          <span className="account-name">
+                            {account.name}
+                            {isClosed && <span className="closed-badge">Closed</span>}
+                          </span>
+                          <span className={`account-amount ${account.value < 0 ? 'negative' : 'positive'}`}>
+                            ${Math.abs(account.value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}

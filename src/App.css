@@ -265,7 +265,10 @@ h1 {
 }
 
 .account-list-item {
-  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
   background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
@@ -276,4 +279,41 @@ h1 {
 
 .account-list-item:last-child {
   margin-bottom: 0;
+}
+
+.account-list-item.closed-account {
+  opacity: 0.6;
+  background-color: #fafafa;
+}
+
+.account-list-item .account-name {
+  flex: 1;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.closed-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: #e5e7eb;
+  color: #6b7280;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.account-list-item .account-amount {
+  font-weight: 600;
+  margin-left: 12px;
+}
+
+.account-list-item .account-amount.positive {
+  color: #059669;
+}
+
+.account-list-item .account-amount.negative {
+  color: #dc2626;
 }
