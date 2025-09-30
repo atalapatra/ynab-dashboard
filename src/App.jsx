@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import EmergencyFunds from './EmergencyFunds';
 import './App.css';
 
 const App = () => {
@@ -9,6 +10,7 @@ const App = () => {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [accountsByCategory, setAccountsByCategory] = useState({});
   const [isUsingSampleData, setIsUsingSampleData] = useState(true);
+  const [activeTab, setActiveTab] = useState('networth');
 
   // Load sample data on mount
   useEffect(() => {
@@ -224,7 +226,7 @@ const App = () => {
   return (
     <div className="app">
       <header>
-        <h1>Net Worth by Category Over Time</h1>
+        <h1>YNAB Dashboard</h1>
         <div className="upload-section">
           {isUsingSampleData && (
             <span className="sample-data-badge">Using Sample Data</span>
@@ -242,7 +244,24 @@ const App = () => {
         </div>
       </header>
 
-      <div className="controls">
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'networth' ? 'active' : ''}`}
+          onClick={() => setActiveTab('networth')}
+        >
+          Net Worth
+        </button>
+        <button
+          className={`tab ${activeTab === 'emergency' ? 'active' : ''}`}
+          onClick={() => setActiveTab('emergency')}
+        >
+          Emergency Funds
+        </button>
+      </div>
+
+      {activeTab === 'networth' && (
+        <>
+          <div className="controls">
         <button onClick={toggleAllCategories} className="toggle-all-button">
           {selectedCategories.length === categories.all?.length ? 'Deselect All' : 'Select All'}
         </button>
@@ -390,6 +409,16 @@ const App = () => {
           )}
         </div>
       </div>
+        </>
+      )}
+
+      {activeTab === 'emergency' && (
+        <EmergencyFunds
+          categories={categories}
+          accountsByCategory={accountsByCategory}
+          data={data}
+        />
+      )}
     </div>
   );
 };
