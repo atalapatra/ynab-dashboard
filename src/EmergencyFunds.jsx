@@ -1,18 +1,28 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import './EmergencyFunds.css';
 
-const EmergencyFunds = ({ categories, accountsByCategory, data }) => {
-  // State for selected accounts/categories for emergency funds
-  const [selectedAccounts, setSelectedAccounts] = useState({});
+const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSettingsChange }) => {
+  // Destructure settings
+  const { selectedAccounts, incomeStreams, nextIncomeId, monthlyExpenses } = settings;
 
-  // State for income streams
-  const [incomeStreams, setIncomeStreams] = useState([
-    { id: 1, name: 'Salary 1', amount: 0 }
-  ]);
-  const [nextIncomeId, setNextIncomeId] = useState(2);
+  // Update functions that modify settings
+  const setSelectedAccounts = (updater) => {
+    const newValue = typeof updater === 'function' ? updater(selectedAccounts) : updater;
+    onSettingsChange({ ...settings, selectedAccounts: newValue });
+  };
 
-  // State for expenses
-  const [monthlyExpenses, setMonthlyExpenses] = useState(0);
+  const setIncomeStreams = (updater) => {
+    const newValue = typeof updater === 'function' ? updater(incomeStreams) : updater;
+    onSettingsChange({ ...settings, incomeStreams: newValue });
+  };
+
+  const setNextIncomeId = (value) => {
+    onSettingsChange({ ...settings, nextIncomeId: value });
+  };
+
+  const setMonthlyExpenses = (value) => {
+    onSettingsChange({ ...settings, monthlyExpenses: value });
+  };
 
   // Calculate total emergency funds from selected accounts
   const totalEmergencyFunds = useMemo(() => {
@@ -152,8 +162,11 @@ const EmergencyFunds = ({ categories, accountsByCategory, data }) => {
 
   // Add income stream
   const addIncomeStream = () => {
-    setIncomeStreams([...incomeStreams, { id: nextIncomeId, name: `Income ${nextIncomeId}`, amount: 0 }]);
-    setNextIncomeId(nextIncomeId + 1);
+    onSettingsChange({
+      ...settings,
+      incomeStreams: [...incomeStreams, { id: nextIncomeId, name: `Income ${nextIncomeId}`, amount: 0 }],
+      nextIncomeId: nextIncomeId + 1
+    });
   };
 
   // Remove income stream

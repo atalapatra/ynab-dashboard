@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import EmergencyFunds from './EmergencyFunds';
+import IncomeExpenses from './IncomeExpenses';
 import './App.css';
 
 const App = () => {
@@ -12,18 +13,44 @@ const App = () => {
   const [isUsingSampleData, setIsUsingSampleData] = useState(true);
   const [activeTab, setActiveTab] = useState('networth');
 
+  // Income/Expense data
+  const [incomeExpenseData, setIncomeExpenseData] = useState([]);
+  const [incomeExpenseCategories, setIncomeExpenseCategories] = useState({ income: [], expenses: [] });
+  const [selectedIncomeCategories, setSelectedIncomeCategories] = useState([]);
+  const [selectedExpenseCategories, setSelectedExpenseCategories] = useState([]);
+  const [isUsingIncomeExpenseSampleData, setIsUsingIncomeExpenseSampleData] = useState(true);
+
+  // Emergency Fund settings
+  const [emergencyFundSettings, setEmergencyFundSettings] = useState({
+    selectedAccounts: {},
+    incomeStreams: [{ id: 1, name: 'Salary 1', amount: 0 }],
+    nextIncomeId: 2,
+    monthlyExpenses: 0
+  });
+
   // Load sample data on mount
   useEffect(() => {
     loadSampleData();
+    loadIncomeExpenseSampleData();
   }, []);
 
   const loadSampleData = async () => {
     try {
-      const response = await fetch('/data/sample-data.csv');
+      const response = await fetch('/sample-data/net-worth-sample-data.csv');
       const text = await response.text();
       processCSV(text);
     } catch (error) {
       console.error('Error loading sample data:', error);
+    }
+  };
+
+  const loadIncomeExpenseSampleData = async () => {
+    try {
+      const response = await fetch('/sample-data/income-expense-sample-data.csv');
+      const text = await response.text();
+      processIncomeExpenseCSV(text);
+    } catch (error) {
+      console.error('Error loading income/expense sample data:', error);
     }
   };
 
@@ -34,6 +61,18 @@ const App = () => {
       reader.onload = (e) => {
         processCSV(e.target.result);
         setIsUsingSampleData(false);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleIncomeExpenseFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        processIncomeExpenseCSV(e.target.result);
+        setIsUsingIncomeExpenseSampleData(false);
       };
       reader.readAsText(file);
     }
@@ -128,6 +167,89 @@ const App = () => {
         setCategories(sortedCategories);
         setSelectedCategories(sortedCategories.all); // Select all by default
         setAccountsByCategory(accountsMap);
+      },
+    });
+  };
+
+  const processIncomeExpenseCSV = (csvText) => {
+    Papa.parse(csvText, {
+      complete: (result) => {
+        const rows = result.data;
+        if (rows.length < 2) return;
+
+        // Extract headers (months)
+        const headers = rows[0].slice(1, -2); // Skip "Category" column and last two columns (Average, Total)
+
+        // Parse all categories
+        const categoryData = {};
+        const incomeCategories = [];
+        const expenseCategories = [];
+        let inIncomeSection = false;
+        let inExpenseSection = false;
+
+        rows.slice(1).forEach((row) => {
+          const categoryName = row[0];
+          if (!categoryName) return;
+
+          // Skip all summary/total rows (but not "Other Quality of Life Expenses (Includes Gifts)")
+          const summaryKeywords = [
+            'All Income Sources',
+            'Total Income',
+            'Fixed Household Expenses',
+            'Variable Household Expenses',
+            'Total',
+            'Net Income',
+            'Savings and Investments'
+          ];
+
+          const isOtherQualityOfLife = categoryName === 'Other Quality of Life Expenses (Includes Gifts)';
+          const isSummaryRow = summaryKeywords.some(keyword => categoryName.includes(keyword)) ||
+                               (categoryName.includes('Quality of Life') && !isOtherQualityOfLife);
+
+          if (isSummaryRow) {
+            // Track section changes
+            if (categoryName === 'All Income Sources') inIncomeSection = true;
+            if (categoryName === 'Total Income') inIncomeSection = false;
+            if (categoryName === 'Fixed Household Expenses' || categoryName === 'Variable Household Expenses') {
+              inExpenseSection = true;
+            }
+            return;
+          }
+
+          // Store category data
+          const values = headers.map((_, index) => {
+            return parseFloat(row[index + 1].replace(/,/g, '')) || 0;
+          });
+
+          categoryData[categoryName] = values;
+
+          if (inIncomeSection) {
+            incomeCategories.push(categoryName);
+          } else if (inExpenseSection) {
+            expenseCategories.push(categoryName);
+          }
+        });
+
+        // Transform data for chart
+        const chartData = headers.map((month, index) => {
+          const dataPoint = { month };
+
+          // Calculate totals from selected categories
+          incomeCategories.forEach((cat) => {
+            dataPoint[cat] = categoryData[cat]?.[index] || 0;
+          });
+
+          expenseCategories.forEach((cat) => {
+            dataPoint[cat] = Math.abs(categoryData[cat]?.[index] || 0);
+          });
+
+          return dataPoint;
+        });
+
+        setIncomeExpenseData(chartData);
+        setIncomeExpenseCategories({ income: incomeCategories, expenses: expenseCategories });
+        setSelectedIncomeCategories(incomeCategories); // Select all by default
+        setSelectedExpenseCategories(expenseCategories); // Select all by default
       },
     });
   };
@@ -229,16 +351,30 @@ const App = () => {
         <h1>YNAB Dashboard</h1>
         <div className="upload-section">
           {isUsingSampleData && (
-            <span className="sample-data-badge">Using Sample Data</span>
+            <span className="sample-data-badge">Using Sample Net Worth Data</span>
           )}
           <label htmlFor="file-upload" className="file-upload-label">
-            Upload New CSV
+            Upload Net Worth CSV
           </label>
           <input
             id="file-upload"
             type="file"
             accept=".csv"
             onChange={handleFileUpload}
+            style={{ display: 'none' }}
+          />
+
+          {isUsingIncomeExpenseSampleData && (
+            <span className="sample-data-badge">Using Sample Income/Expense Data</span>
+          )}
+          <label htmlFor="income-expense-upload" className="file-upload-label">
+            Upload Income/Expense CSV
+          </label>
+          <input
+            id="income-expense-upload"
+            type="file"
+            accept=".csv"
+            onChange={handleIncomeExpenseFileUpload}
             style={{ display: 'none' }}
           />
         </div>
@@ -250,6 +386,12 @@ const App = () => {
           onClick={() => setActiveTab('networth')}
         >
           Net Worth
+        </button>
+        <button
+          className={`tab ${activeTab === 'income' ? 'active' : ''}`}
+          onClick={() => setActiveTab('income')}
+        >
+          Income & Expenses
         </button>
         <button
           className={`tab ${activeTab === 'emergency' ? 'active' : ''}`}
@@ -412,11 +554,24 @@ const App = () => {
         </>
       )}
 
+      {activeTab === 'income' && (
+        <IncomeExpenses
+          data={incomeExpenseData}
+          categories={incomeExpenseCategories}
+          selectedIncomeCategories={selectedIncomeCategories}
+          selectedExpenseCategories={selectedExpenseCategories}
+          onIncomeSelectionChange={setSelectedIncomeCategories}
+          onExpenseSelectionChange={setSelectedExpenseCategories}
+        />
+      )}
+
       {activeTab === 'emergency' && (
         <EmergencyFunds
           categories={categories}
           accountsByCategory={accountsByCategory}
           data={data}
+          settings={emergencyFundSettings}
+          onSettingsChange={setEmergencyFundSettings}
         />
       )}
     </div>
