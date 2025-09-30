@@ -1,15 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import './IncomeExpenses.css';
 
-const IncomeExpenses = ({
-  data,
-  categories,
-  selectedIncomeCategories,
-  selectedExpenseCategories,
-  onIncomeSelectionChange,
-  onExpenseSelectionChange
-}) => {
+const IncomeExpenses = ({ data }) => {
   if (data.length === 0) {
     return (
       <div className="income-expenses">
@@ -17,61 +10,6 @@ const IncomeExpenses = ({
       </div>
     );
   }
-
-  // Calculate filtered data based on selections
-  const filteredData = useMemo(() => {
-    return data.map((month) => {
-      let income = 0;
-      let expenses = 0;
-
-      selectedIncomeCategories.forEach((cat) => {
-        income += month[cat] || 0;
-      });
-
-      selectedExpenseCategories.forEach((cat) => {
-        expenses += month[cat] || 0;
-      });
-
-      return {
-        month: month.month,
-        income,
-        totalExpenses: expenses,
-        net: income - expenses
-      };
-    });
-  }, [data, selectedIncomeCategories, selectedExpenseCategories]);
-
-  const toggleIncomeCategory = (category) => {
-    if (selectedIncomeCategories.includes(category)) {
-      onIncomeSelectionChange(selectedIncomeCategories.filter((c) => c !== category));
-    } else {
-      onIncomeSelectionChange([...selectedIncomeCategories, category]);
-    }
-  };
-
-  const toggleExpenseCategory = (category) => {
-    if (selectedExpenseCategories.includes(category)) {
-      onExpenseSelectionChange(selectedExpenseCategories.filter((c) => c !== category));
-    } else {
-      onExpenseSelectionChange([...selectedExpenseCategories, category]);
-    }
-  };
-
-  const toggleAllIncome = () => {
-    if (selectedIncomeCategories.length === categories.income.length) {
-      onIncomeSelectionChange([]);
-    } else {
-      onIncomeSelectionChange(categories.income);
-    }
-  };
-
-  const toggleAllExpenses = () => {
-    if (selectedExpenseCategories.length === categories.expenses.length) {
-      onExpenseSelectionChange([]);
-    } else {
-      onExpenseSelectionChange(categories.expenses);
-    }
-  };
 
   // Custom dot component that colors based on positive/negative value
   const CustomDot = (props) => {
@@ -124,15 +62,15 @@ const IncomeExpenses = ({
   };
 
   // Calculate summary statistics
-  const totalIncome = filteredData.reduce((sum, d) => sum + d.income, 0);
-  const totalExpenses = filteredData.reduce((sum, d) => sum + d.totalExpenses, 0);
-  const totalNet = filteredData.reduce((sum, d) => sum + d.net, 0);
-  const avgIncome = totalIncome / filteredData.length;
-  const avgExpenses = totalExpenses / filteredData.length;
-  const avgNet = totalNet / filteredData.length;
+  const totalIncome = data.reduce((sum, d) => sum + d.income, 0);
+  const totalExpenses = data.reduce((sum, d) => sum + d.totalExpenses, 0);
+  const totalNet = data.reduce((sum, d) => sum + d.net, 0);
+  const avgIncome = totalIncome / data.length;
+  const avgExpenses = totalExpenses / data.length;
+  const avgNet = totalNet / data.length;
 
-  const positiveMonths = filteredData.filter(d => d.net >= 0).length;
-  const negativeMonths = filteredData.filter(d => d.net < 0).length;
+  const positiveMonths = data.filter(d => d.net >= 0).length;
+  const negativeMonths = data.filter(d => d.net < 0).length;
 
   return (
     <div className="income-expenses">
@@ -140,50 +78,6 @@ const IncomeExpenses = ({
       <p className="description">
         Track your monthly income, expenses, and net cash flow over time.
       </p>
-
-      <div className="category-selection-section">
-        <div className="category-selection-column">
-          <div className="selection-header">
-            <h3>Income Categories</h3>
-            <button onClick={toggleAllIncome} className="toggle-all-btn">
-              {selectedIncomeCategories.length === categories.income.length ? 'Deselect All' : 'Select All'}
-            </button>
-          </div>
-          <div className="category-checkboxes">
-            {categories.income.map((cat) => (
-              <label key={cat} className="category-checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={selectedIncomeCategories.includes(cat)}
-                  onChange={() => toggleIncomeCategory(cat)}
-                />
-                <span>{cat}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="category-selection-column">
-          <div className="selection-header">
-            <h3>Expense Categories</h3>
-            <button onClick={toggleAllExpenses} className="toggle-all-btn">
-              {selectedExpenseCategories.length === categories.expenses.length ? 'Deselect All' : 'Select All'}
-            </button>
-          </div>
-          <div className="category-checkboxes">
-            {categories.expenses.map((cat) => (
-              <label key={cat} className="category-checkbox-item">
-                <input
-                  type="checkbox"
-                  checked={selectedExpenseCategories.includes(cat)}
-                  onChange={() => toggleExpenseCategory(cat)}
-                />
-                <span>{cat}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
 
       <div className="summary-cards">
         <div className="summary-card">
@@ -205,7 +99,7 @@ const IncomeExpenses = ({
         </div>
 
         <div className="summary-card">
-          <h3>Total ({filteredData.length} months)</h3>
+          <h3>Total ({data.length} months)</h3>
           <div className="summary-row">
             <span>Income:</span>
             <span className="positive">${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -226,18 +120,18 @@ const IncomeExpenses = ({
           <h3>Month Distribution</h3>
           <div className="summary-row">
             <span>Positive Months:</span>
-            <span className="positive">{positiveMonths} ({((positiveMonths / filteredData.length) * 100).toFixed(0)}%)</span>
+            <span className="positive">{positiveMonths} ({((positiveMonths / data.length) * 100).toFixed(0)}%)</span>
           </div>
           <div className="summary-row">
             <span>Negative Months:</span>
-            <span className="negative">{negativeMonths} ({((negativeMonths / filteredData.length) * 100).toFixed(0)}%)</span>
+            <span className="negative">{negativeMonths} ({((negativeMonths / data.length) * 100).toFixed(0)}%)</span>
           </div>
         </div>
       </div>
 
       <div className="chart-container">
         <ResponsiveContainer width="100%" height={500}>
-          <LineChart data={filteredData} margin={{ top: 20, right: 30, left: 80, bottom: 100 }}>
+          <LineChart data={data} margin={{ top: 20, right: 30, left: 80, bottom: 100 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="month"

@@ -15,9 +15,6 @@ const App = () => {
 
   // Income/Expense data
   const [incomeExpenseData, setIncomeExpenseData] = useState([]);
-  const [incomeExpenseCategories, setIncomeExpenseCategories] = useState({ income: [], expenses: [] });
-  const [selectedIncomeCategories, setSelectedIncomeCategories] = useState([]);
-  const [selectedExpenseCategories, setSelectedExpenseCategories] = useState([]);
   const [isUsingIncomeExpenseSampleData, setIsUsingIncomeExpenseSampleData] = useState(true);
 
   // Emergency Fund settings
@@ -180,76 +177,32 @@ const App = () => {
         // Extract headers (months)
         const headers = rows[0].slice(1, -2); // Skip "Category" column and last two columns (Average, Total)
 
-        // Parse all categories
-        const categoryData = {};
-        const incomeCategories = [];
-        const expenseCategories = [];
-        let inIncomeSection = false;
-        let inExpenseSection = false;
+        // Find the total income and total expense rows
+        let totalIncomeRow = null;
+        let totalExpensesRow = null;
 
-        rows.slice(1).forEach((row) => {
-          const categoryName = row[0];
-          if (!categoryName) return;
-
-          // Skip all summary/total rows (but not "Other Quality of Life Expenses (Includes Gifts)")
-          const summaryKeywords = [
-            'All Income Sources',
-            'Total Income',
-            'Fixed Household Expenses',
-            'Variable Household Expenses',
-            'Total',
-            'Net Income',
-            'Savings and Investments'
-          ];
-
-          const isOtherQualityOfLife = categoryName === 'Other Quality of Life Expenses (Includes Gifts)';
-          const isSummaryRow = summaryKeywords.some(keyword => categoryName.includes(keyword)) ||
-                               (categoryName.includes('Quality of Life') && !isOtherQualityOfLife);
-
-          if (isSummaryRow) {
-            // Track section changes
-            if (categoryName === 'All Income Sources') inIncomeSection = true;
-            if (categoryName === 'Total Income') inIncomeSection = false;
-            if (categoryName === 'Fixed Household Expenses' || categoryName === 'Variable Household Expenses') {
-              inExpenseSection = true;
-            }
-            return;
-          }
-
-          // Store category data
-          const values = headers.map((_, index) => {
-            return parseFloat(row[index + 1].replace(/,/g, '')) || 0;
-          });
-
-          categoryData[categoryName] = values;
-
-          if (inIncomeSection) {
-            incomeCategories.push(categoryName);
-          } else if (inExpenseSection) {
-            expenseCategories.push(categoryName);
-          }
+        rows.forEach((row) => {
+          if (row[0] === 'Total Income') totalIncomeRow = row;
+          if (row[0] === 'Total Expenses') totalExpensesRow = row;
         });
+
+        if (!totalIncomeRow || !totalExpensesRow) return;
 
         // Transform data for chart
         const chartData = headers.map((month, index) => {
-          const dataPoint = { month };
+          const income = parseFloat(totalIncomeRow[index + 1].replace(/,/g, '')) || 0;
+          const expenses = parseFloat(totalExpensesRow[index + 1].replace(/,/g, '')) || 0;
+          const net = income + expenses; // Expenses are negative
 
-          // Calculate totals from selected categories
-          incomeCategories.forEach((cat) => {
-            dataPoint[cat] = categoryData[cat]?.[index] || 0;
-          });
-
-          expenseCategories.forEach((cat) => {
-            dataPoint[cat] = Math.abs(categoryData[cat]?.[index] || 0);
-          });
-
-          return dataPoint;
+          return {
+            month,
+            income,
+            totalExpenses: Math.abs(expenses),
+            net,
+          };
         });
 
         setIncomeExpenseData(chartData);
-        setIncomeExpenseCategories({ income: incomeCategories, expenses: expenseCategories });
-        setSelectedIncomeCategories(incomeCategories); // Select all by default
-        setSelectedExpenseCategories(expenseCategories); // Select all by default
       },
     });
   };
@@ -555,14 +508,7 @@ const App = () => {
       )}
 
       {activeTab === 'income' && (
-        <IncomeExpenses
-          data={incomeExpenseData}
-          categories={incomeExpenseCategories}
-          selectedIncomeCategories={selectedIncomeCategories}
-          selectedExpenseCategories={selectedExpenseCategories}
-          onIncomeSelectionChange={setSelectedIncomeCategories}
-          onExpenseSelectionChange={setSelectedExpenseCategories}
-        />
+        <IncomeExpenses data={incomeExpenseData} />
       )}
 
       {activeTab === 'emergency' && (
