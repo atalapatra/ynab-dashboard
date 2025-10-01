@@ -224,6 +224,7 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
                   {accounts.map((account, index) => {
                     const key = `${category}_${index}`;
                     const isSelected = selectedAccounts[key];
+                    const isClosed = account.fullName?.startsWith('(Closed');
 
                     return (
                       <div
@@ -236,7 +237,10 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
                           checked={isSelected || false}
                           onChange={() => {}}
                         />
-                        <span className="account-select-name">{account.name}</span>
+                        <span className="account-select-name">
+                          {account.name}
+                          {isClosed && <> <span className="closed-badge">Closed</span></>}
+                        </span>
                         <span className={`account-select-value ${account.value < 0 ? 'negative' : ''}`}>
                           ${account.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
