@@ -25,10 +25,39 @@ const App = () => {
     monthlyExpenses: 0
   });
 
-  // Load sample data on mount
+  // Save emergency fund settings to localStorage whenever they change
   useEffect(() => {
-    loadSampleData();
-    loadIncomeExpenseSampleData();
+    localStorage.setItem('ynab-dashboard-emergency-settings', JSON.stringify(emergencyFundSettings));
+  }, [emergencyFundSettings]);
+
+  // Load data on mount - check localStorage first
+  useEffect(() => {
+    const savedData = localStorage.getItem('ynab-dashboard-data');
+    const savedIncomeExpenseData = localStorage.getItem('ynab-dashboard-income-expense');
+    const savedEmergencySettings = localStorage.getItem('ynab-dashboard-emergency-settings');
+
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      setData(parsed.data);
+      setCategories(parsed.categories);
+      setSelectedCategories(parsed.selectedCategories);
+      setAccountsByCategory(parsed.accountsByCategory);
+      setIsUsingSampleData(parsed.isUsingSampleData);
+    } else {
+      loadSampleData();
+    }
+
+    if (savedIncomeExpenseData) {
+      const parsed = JSON.parse(savedIncomeExpenseData);
+      setIncomeExpenseData(parsed.data);
+      setIsUsingIncomeExpenseSampleData(parsed.isUsingSampleData);
+    } else {
+      loadIncomeExpenseSampleData();
+    }
+
+    if (savedEmergencySettings) {
+      setEmergencyFundSettings(JSON.parse(savedEmergencySettings));
+    }
   }, []);
 
   const loadSampleData = async () => {
@@ -164,6 +193,15 @@ const App = () => {
         setCategories(sortedCategories);
         setSelectedCategories(sortedCategories.all); // Select all by default
         setAccountsByCategory(accountsMap);
+
+        // Save to localStorage
+        localStorage.setItem('ynab-dashboard-data', JSON.stringify({
+          data: chartData,
+          categories: sortedCategories,
+          selectedCategories: sortedCategories.all,
+          accountsByCategory: accountsMap,
+          isUsingSampleData
+        }));
       },
     });
   };
@@ -203,6 +241,12 @@ const App = () => {
         });
 
         setIncomeExpenseData(chartData);
+
+        // Save to localStorage
+        localStorage.setItem('ynab-dashboard-income-expense', JSON.stringify({
+          data: chartData,
+          isUsingSampleData: isUsingIncomeExpenseSampleData
+        }));
       },
     });
   };
@@ -230,18 +274,36 @@ const App = () => {
   };
 
   const toggleCategory = (category) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category)
+    setSelectedCategories((prev) => {
+      const updated = prev.includes(category)
         ? prev.filter((c) => c !== category)
-        : [...prev, category]
-    );
+        : [...prev, category];
+
+      // Save to localStorage when categories change
+      const savedData = localStorage.getItem('ynab-dashboard-data');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        parsed.selectedCategories = updated;
+        localStorage.setItem('ynab-dashboard-data', JSON.stringify(parsed));
+      }
+
+      return updated;
+    });
   };
 
   const toggleAllCategories = () => {
-    if (selectedCategories.length === categories.all?.length) {
-      setSelectedCategories([]);
-    } else {
-      setSelectedCategories(categories.all || []);
+    const updated = selectedCategories.length === categories.all?.length
+      ? []
+      : (categories.all || []);
+
+    setSelectedCategories(updated);
+
+    // Save to localStorage
+    const savedData = localStorage.getItem('ynab-dashboard-data');
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      parsed.selectedCategories = updated;
+      localStorage.setItem('ynab-dashboard-data', JSON.stringify(parsed));
     }
   };
 
