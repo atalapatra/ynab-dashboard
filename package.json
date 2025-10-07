@@ -2,6 +2,7 @@
   "name": "ynab-dashboard",
   "version": "1.0.0",
   "description": "Net worth dashboard showing change by category over time",
+  "homepage": "https://atalapatra.github.io/ynab-dashboard/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
