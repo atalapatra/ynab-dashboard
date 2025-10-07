@@ -368,6 +368,9 @@ const App = () => {
         <div className="empty-state">
           <h1>Net Worth by Category Over Time</h1>
           <p>Loading sample data...</p>
+          <button onClick={resetToSampleData} className="reset-button" style={{ marginTop: '20px' }}>
+            Reset to Sample Data
+          </button>
         </div>
       </div>
     );
