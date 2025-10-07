@@ -80,6 +80,19 @@ const App = () => {
     }
   };
 
+  const resetToSampleData = () => {
+    localStorage.removeItem('ynab-dashboard-data');
+    localStorage.removeItem('ynab-dashboard-income-expense');
+    localStorage.removeItem('ynab-dashboard-emergency-settings');
+    loadSampleData();
+    loadIncomeExpenseSampleData();
+    setEmergencyFundSettings({
+      selectedAccounts: [],
+      incomeStreams: [{ name: '', amount: '' }],
+      monthlyExpenses: ''
+    });
+  };
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -392,6 +405,10 @@ const App = () => {
             onChange={handleIncomeExpenseFileUpload}
             style={{ display: 'none' }}
           />
+
+          <button onClick={resetToSampleData} className="reset-button">
+            Reset to Sample Data
+          </button>
         </div>
       </header>
 
