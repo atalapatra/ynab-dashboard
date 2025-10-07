@@ -62,7 +62,7 @@ const App = () => {
 
   const loadSampleData = async () => {
     try {
-      const response = await fetch('/sample-data/net-worth-sample-data.csv');
+      const response = await fetch(`${import.meta.env.BASE_URL}sample-data/net-worth-sample-data.csv`);
       const text = await response.text();
       processCSV(text);
     } catch (error) {
@@ -72,7 +72,7 @@ const App = () => {
 
   const loadIncomeExpenseSampleData = async () => {
     try {
-      const response = await fetch('/sample-data/income-expense-sample-data.csv');
+      const response = await fetch(`${import.meta.env.BASE_URL}sample-data/income-expense-sample-data.csv`);
       const text = await response.text();
       processIncomeExpenseCSV(text);
     } catch (error) {
