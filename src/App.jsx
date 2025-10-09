@@ -64,7 +64,7 @@ const App = () => {
     try {
       const response = await fetch(`${import.meta.env.BASE_URL}sample-data/net-worth-sample-data.csv`);
       const text = await response.text();
-      processCSV(text);
+      processCSV(text, true);
     } catch (error) {
       console.error('Error loading sample data:', error);
     }
@@ -74,7 +74,7 @@ const App = () => {
     try {
       const response = await fetch(`${import.meta.env.BASE_URL}sample-data/income-expense-sample-data.csv`);
       const text = await response.text();
-      processIncomeExpenseCSV(text);
+      processIncomeExpenseCSV(text, true);
     } catch (error) {
       console.error('Error loading income/expense sample data:', error);
     }
@@ -84,6 +84,8 @@ const App = () => {
     localStorage.removeItem('ynab-dashboard-data');
     localStorage.removeItem('ynab-dashboard-income-expense');
     localStorage.removeItem('ynab-dashboard-emergency-settings');
+    setIsUsingSampleData(true);
+    setIsUsingIncomeExpenseSampleData(true);
     loadSampleData();
     loadIncomeExpenseSampleData();
     setEmergencyFundSettings({
@@ -98,7 +100,7 @@ const App = () => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        processCSV(e.target.result);
+        processCSV(e.target.result, false);
         setIsUsingSampleData(false);
       };
       reader.readAsText(file);
@@ -110,14 +112,14 @@ const App = () => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        processIncomeExpenseCSV(e.target.result);
+        processIncomeExpenseCSV(e.target.result, false);
         setIsUsingIncomeExpenseSampleData(false);
       };
       reader.readAsText(file);
     }
   };
 
-  const processCSV = (csvText) => {
+  const processCSV = (csvText, isSampleData = false) => {
     Papa.parse(csvText, {
       complete: (result) => {
         const rows = result.data;
@@ -213,13 +215,13 @@ const App = () => {
           categories: sortedCategories,
           selectedCategories: sortedCategories.all,
           accountsByCategory: accountsMap,
-          isUsingSampleData: false
+          isUsingSampleData: isSampleData
         }));
       },
     });
   };
 
-  const processIncomeExpenseCSV = (csvText) => {
+  const processIncomeExpenseCSV = (csvText, isSampleData = false) => {
     Papa.parse(csvText, {
       complete: (result) => {
         const rows = result.data;
@@ -258,7 +260,7 @@ const App = () => {
         // Save to localStorage
         localStorage.setItem('ynab-dashboard-income-expense', JSON.stringify({
           data: chartData,
-          isUsingSampleData: false
+          isUsingSampleData: isSampleData
         }));
       },
     });
