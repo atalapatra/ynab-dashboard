@@ -213,7 +213,7 @@ const App = () => {
           categories: sortedCategories,
           selectedCategories: sortedCategories.all,
           accountsByCategory: accountsMap,
-          isUsingSampleData
+          isUsingSampleData: false
         }));
       },
     });
@@ -258,7 +258,7 @@ const App = () => {
         // Save to localStorage
         localStorage.setItem('ynab-dashboard-income-expense', JSON.stringify({
           data: chartData,
-          isUsingSampleData: isUsingIncomeExpenseSampleData
+          isUsingSampleData: false
         }));
       },
     });
