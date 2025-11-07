@@ -176,7 +176,7 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
 
   // Update income stream
   const updateIncomeStream = (id, field, value) => {
-    setIncomeStreams(incomeStreams.map(stream =>
+    setIncomeStreams(prevStreams => prevStreams.map(stream =>
       stream.id === id ? { ...stream, [field]: value } : stream
     ));
   };
