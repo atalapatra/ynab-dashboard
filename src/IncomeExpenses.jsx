@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import './IncomeExpenses.css';
 
@@ -10,6 +10,15 @@ const IncomeExpenses = ({ data }) => {
       </div>
     );
   }
+
+  // Calculate cumulative net for each month
+  const dataWithCumulative = useMemo(() => {
+    let cumulative = 0;
+    return data.map(item => {
+      cumulative += item.net;
+      return { ...item, cumulativeNet: cumulative };
+    });
+  }, [data]);
 
   // Custom dot component that colors based on positive/negative value
   const CustomDot = (props) => {
@@ -54,6 +63,34 @@ const IncomeExpenses = ({ data }) => {
             color: data.net >= 0 ? '#059669' : '#dc2626'
           }}>
             Net: ${data.net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CumulativeTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div style={{
+          backgroundColor: 'white',
+          padding: '12px',
+          border: '1px solid #ccc',
+          borderRadius: '4px'
+        }}>
+          <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>{label}</p>
+          <p style={{
+            fontWeight: 'bold',
+            fontSize: '15px',
+            margin: '4px 0',
+            color: data.cumulativeNet >= 0 ? '#059669' : '#dc2626'
+          }}>
+            Cumulative Net: ${data.cumulativeNet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p style={{ fontSize: '14px', margin: '4px 0', color: '#666' }}>
+            This Month Net: ${data.net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
       );
@@ -130,6 +167,7 @@ const IncomeExpenses = ({ data }) => {
       </div>
 
       <div className="chart-container">
+        <h3 style={{ marginBottom: '10px', fontSize: '18px' }}>Monthly Net Income</h3>
         <ResponsiveContainer width="100%" height={500}>
           <LineChart data={data} margin={{ top: 20, right: 30, left: 80, bottom: 100 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -171,6 +209,40 @@ const IncomeExpenses = ({ data }) => {
           <div className="legend-dot negative"></div>
           <span>Negative Month (Red dot)</span>
         </div>
+      </div>
+
+      <div className="chart-container" style={{ marginTop: '40px' }}>
+        <h3 style={{ marginBottom: '10px', fontSize: '18px' }}>Cumulative Net Income</h3>
+        <ResponsiveContainer width="100%" height={500}>
+          <LineChart data={dataWithCumulative} margin={{ top: 20, right: 30, left: 80, bottom: 100 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="month"
+              angle={-45}
+              textAnchor="end"
+              height={100}
+              style={{ fontSize: '12px' }}
+            />
+            <YAxis
+              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+              style={{ fontSize: '12px' }}
+            />
+            <Tooltip content={<CumulativeTooltip />} />
+            <Legend
+              verticalAlign="top"
+              height={40}
+            />
+            <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+            <Line
+              type="monotone"
+              dataKey="cumulativeNet"
+              stroke="#9333ea"
+              strokeWidth={3}
+              dot={{ r: 4, fill: '#9333ea' }}
+              name="Cumulative Net"
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
