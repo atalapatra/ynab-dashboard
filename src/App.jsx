@@ -27,7 +27,9 @@ const App = () => {
       selectedAccounts: {},
       incomeStreams: [{ id: 1, name: 'Salary 1', amount: 0 }],
       nextIncomeId: 2,
-      monthlyExpenses: 0
+      monthlyExpenses: 0,
+      reservedBudgets: [],
+      nextBudgetId: 1
     };
   });
 

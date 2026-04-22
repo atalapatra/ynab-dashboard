@@ -1,9 +1,12 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import './EmergencyFunds.css';
 
 const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSettingsChange }) => {
   // Destructure settings
-  const { selectedAccounts, incomeStreams, nextIncomeId, monthlyExpenses } = settings;
+  const {
+    selectedAccounts, incomeStreams, nextIncomeId, monthlyExpenses,
+    reservedBudgets = [], nextBudgetId = 1
+  } = settings;
 
   // Update functions that modify settings
   const setSelectedAccounts = (updater) => {
@@ -24,6 +27,25 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
     onSettingsChange({ ...settings, monthlyExpenses: value });
   };
 
+  const addReservedBudget = () => {
+    onSettingsChange({
+      ...settings,
+      reservedBudgets: [...reservedBudgets, { id: nextBudgetId, label: '', amount: 0 }],
+      nextBudgetId: nextBudgetId + 1
+    });
+  };
+
+  const removeReservedBudget = (id) => {
+    onSettingsChange({ ...settings, reservedBudgets: reservedBudgets.filter(b => b.id !== id) });
+  };
+
+  const updateReservedBudget = (id, field, value) => {
+    onSettingsChange({
+      ...settings,
+      reservedBudgets: reservedBudgets.map(b => b.id === id ? { ...b, [field]: value } : b)
+    });
+  };
+
   // Calculate total emergency funds from selected accounts
   const totalEmergencyFunds = useMemo(() => {
     let total = 0;
@@ -38,6 +60,13 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
     });
     return total;
   }, [selectedAccounts, accountsByCategory]);
+
+  // Calculate total reserved budgets
+  const totalReserved = useMemo(() => {
+    return reservedBudgets.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+  }, [reservedBudgets]);
+
+  const availableEmergencyFunds = totalEmergencyFunds - totalReserved;
 
   // Calculate total monthly income
   const totalMonthlyIncome = useMemo(() => {
@@ -56,7 +85,7 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
     const results = [];
 
     // Scenario 0: All income streams active
-    const monthsWithAllIncome = netMonthly > 0 ? Infinity : (totalEmergencyFunds / monthlyExpenses);
+    const monthsWithAllIncome = netMonthly > 0 ? Infinity : (availableEmergencyFunds / monthlyExpenses);
     results.push({
       name: 'All Income Active',
       lostIncomes: [],
@@ -87,7 +116,7 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
       const scenarioNetMonthly = activeIncome - monthlyExpenses;
       const monthsRemaining = scenarioNetMonthly >= 0
         ? Infinity
-        : totalEmergencyFunds / Math.abs(scenarioNetMonthly);
+        : availableEmergencyFunds / Math.abs(scenarioNetMonthly);
 
       results.push({
         name: lostStreams.length === 1
@@ -108,7 +137,7 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
       if (b.monthsRemaining === Infinity) return -1;
       return a.monthsRemaining - b.monthsRemaining;
     });
-  }, [incomeStreams, monthlyExpenses, totalEmergencyFunds, totalMonthlyIncome, netMonthly]);
+  }, [incomeStreams, monthlyExpenses, availableEmergencyFunds, totalMonthlyIncome, netMonthly]);
 
   // Toggle account selection
   const toggleAccount = (category, accountIndex) => {
@@ -197,6 +226,18 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
             <span>Total Emergency Funds:</span>
             <span className="amount">${totalEmergencyFunds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
+          {totalReserved > 0 && (
+            <div className="funds-breakdown">
+              <div className="funds-breakdown-row reserved">
+                <span>Reserved Budgets:</span>
+                <span>-${totalReserved.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="funds-breakdown-row available">
+                <span>Available:</span>
+                <span>${availableEmergencyFunds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          )}
           <div className="account-selection">
             {categories.all?.map((category) => {
               const accounts = accountsByCategory[category] || [];
@@ -253,9 +294,56 @@ const EmergencyFunds = ({ categories, accountsByCategory, data, settings, onSett
           </div>
         </div>
 
-        {/* Right Column: Income & Expenses */}
+        {/* Right Column: Reserved Budgets + Income & Expenses */}
         <div className="ef-section">
           <h3>Monthly Income & Expenses</h3>
+
+          <div className="reserved-section">
+            <div className="section-header">
+              <h4>Reserved Budgets</h4>
+              <button onClick={addReservedBudget} className="add-button">+ Add Budget</button>
+            </div>
+            {reservedBudgets.length === 0 ? (
+              <p className="reserved-empty">No reserved budgets. Add one to set aside funds for specific purposes.</p>
+            ) : (
+              <>
+                {reservedBudgets.map((budget) => (
+                  <div key={budget.id} className="income-item">
+                    <input
+                      type="text"
+                      value={budget.label}
+                      onChange={(e) => updateReservedBudget(budget.id, 'label', e.target.value)}
+                      placeholder="Budget label"
+                      className="income-name-input"
+                    />
+                    <div className="income-amount-wrapper">
+                      <span className="currency-symbol">$</span>
+                      <input
+                        type="number"
+                        value={budget.amount}
+                        onChange={(e) => updateReservedBudget(budget.id, 'amount', e.target.value)}
+                        placeholder="0.00"
+                        className="income-amount-input"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                    <button
+                      onClick={() => removeReservedBudget(budget.id)}
+                      className="remove-button"
+                      title="Remove budget"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <div className="reserved-total">
+                  <span>Total Reserved:</span>
+                  <span className="amount">-${totalReserved.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="income-section">
             <div className="section-header">
