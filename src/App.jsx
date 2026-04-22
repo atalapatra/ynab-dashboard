@@ -18,11 +18,17 @@ const App = () => {
   const [isUsingIncomeExpenseSampleData, setIsUsingIncomeExpenseSampleData] = useState(true);
 
   // Emergency Fund settings
-  const [emergencyFundSettings, setEmergencyFundSettings] = useState({
-    selectedAccounts: {},
-    incomeStreams: [{ id: 1, name: 'Salary 1', amount: 0 }],
-    nextIncomeId: 2,
-    monthlyExpenses: 0
+  const [emergencyFundSettings, setEmergencyFundSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ynab-dashboard-emergency-settings');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      selectedAccounts: {},
+      incomeStreams: [{ id: 1, name: 'Salary 1', amount: 0 }],
+      nextIncomeId: 2,
+      monthlyExpenses: 0
+    };
   });
 
   // Save emergency fund settings to localStorage whenever they change
@@ -34,7 +40,6 @@ const App = () => {
   useEffect(() => {
     const savedData = localStorage.getItem('ynab-dashboard-data');
     const savedIncomeExpenseData = localStorage.getItem('ynab-dashboard-income-expense');
-    const savedEmergencySettings = localStorage.getItem('ynab-dashboard-emergency-settings');
 
     if (savedData) {
       const parsed = JSON.parse(savedData);
@@ -55,9 +60,6 @@ const App = () => {
       loadIncomeExpenseSampleData();
     }
 
-    if (savedEmergencySettings) {
-      setEmergencyFundSettings(JSON.parse(savedEmergencySettings));
-    }
   }, []);
 
   const loadSampleData = async () => {
