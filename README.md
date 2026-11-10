@@ -52,7 +52,7 @@ A comprehensive React dashboard for visualizing net worth, income & expenses, an
 - The dashboard automatically loads sample data on startup
 - **Upload Net Worth CSV** - Load your net worth data
 - **Upload Income/Expense CSV** - Load your income and expense data
-- Sample data files are located in `/sample-data/`
+- Sample data files are located in `public/sample-data/`
 
 ### Net Worth Tab
 - Click category names or use checkboxes to include/exclude categories from the chart
